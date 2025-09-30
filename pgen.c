@@ -8,29 +8,22 @@ char special[] = {' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','
 
 typedef struct Options {
     char exclude[128];
-    unsigned int upper;
-    unsigned int lower;
-    unsigned int digits;
-    unsigned int special;
-    unsigned int help;
     unsigned int len;
-    char flags; // This variable contains 7 flags, from the least valuable: upper, lower, digits, special, help, exclude, custom
+    char flags; // This variable contains 7 flags, from the least valuable: upper, lower, digits, special, help, custom, exclude
     char *custom_alphabet;
 } Options;
 
 int get_flag(char c, Options *opt) {
-    unsigned int x = 0;
-
     switch(c) {
-        case 'u': x = 1 << 0; break;
-        case 'l': x = 1 << 1; break;
-        case 'd': x = 1 << 2; break;
-        case 's': x = 1 << 3; break;
-        case 'h': x = 1 << 4; break;
-        case 'x': x = 1 << 5; break;
-        case 'c': x = 1 << 6; break;
+        case 'u': return opt->flags & (1 << 0);
+        case 'l': return opt->flags & (1 << 1);
+        case 'd': return opt->flags & (1 << 2);
+        case 's': return opt->flags & (1 << 3);
+        case 'h': return opt->flags & (1 << 4);
+        case 'c': return opt->flags & (1 << 5);
+        case 'x': return opt->flags & (1 << 6);
+        default: return 0;
     }
-    return opt->flags & x;
 }
 
 void print_help() {
@@ -83,25 +76,27 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
         while(argv[i][j] != '\0') {
             switch(argv[i][j]) {
                 case '-': break;
-                case 'u': opt->upper = 1; break;
-                case 'l': opt->lower = 1; break;
-                case 'd': opt->digits = 1; break;
-                case 's': opt->special = 1; break;
+                case 'u': opt->flags = opt->flags ^ (1 << 0); break;
+                case 'l': opt->flags = opt->flags ^ (1 << 1); break;
+                case 'd': opt->flags = opt->flags ^ (1 << 2); break;
+                case 's': opt->flags = opt->flags ^ (1 << 3); break;
                 case 'c': 
-                    if(argc - i <= 1) return 5;
-                    opt->custom_alphabet = argv[i+1];
-                    skip = 1;
-                    break;
+                if(argc - i <= 1) return 5;
+                opt->custom_alphabet = argv[i+1];
+                skip = 1;
+                opt->flags = opt->flags ^ (1 << 5);
+                break;
                 case 'x': 
-                    if(argc - i <= 1) return 5;
-                    int z = 0;
-                    while(argv[i+1][z] != '\0') {
-                        opt->exclude[argv[i+1][z] % 128] = 1;
-                        ++z;
-                    }
-                    skip = 1;
-                    break;
-                case 'h': return 1;
+                if(argc - i <= 1) return 5;
+                int z = 0;
+                while(argv[i+1][z] != '\0') {
+                    opt->exclude[argv[i+1][z] % 128] = 1;
+                    ++z;
+                }
+                skip = 1;
+                opt->flags = opt->flags ^ (1 << 6);
+                break;
+                case 'h': opt->flags = opt->flags ^ (1 << 4); return 1;
                 default: return 1;
             }
             ++j;
@@ -110,12 +105,7 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
         if(skip) ++i;
     }
 
-    if(!opt->custom_alphabet && !opt->digits && !opt->lower && ! opt->special && !opt->upper) {
-        opt->digits = 1;
-        opt->lower = 1;
-        opt->upper = 1;
-        opt->special = 1;
-    }
+    if(opt->flags == '\0') opt->flags = 0b00001111;
 
     int len = atoi(argc[argv-1]);
     if(len <= 0) return 4;
@@ -131,10 +121,10 @@ char* build_alphabet(Options *opt) {
 
     for(int i = 0; i < 96; i++) buffer[i] = '\0';
 
-    if(opt->lower) scat(buffer, lower, opt->exclude);
-    if(opt->upper) scat(buffer, upper, opt->exclude);
-    if(opt->digits) scat(buffer, digits, opt->exclude);
-    if(opt->special) scat(buffer, special, opt->exclude);
+    if(get_flag('l', opt)) scat(buffer, lower, opt->exclude);
+    if(get_flag('u', opt)) scat(buffer, upper, opt->exclude);
+    if(get_flag('d', opt)) scat(buffer, digits, opt->exclude);
+    if(get_flag('s', opt)) scat(buffer, special, opt->exclude);
 
     return buffer;
 }
@@ -167,7 +157,7 @@ void generate_password(char *p, Options *opt) {
 int main(int argc, char* argv[]) {
 
     char *p;
-    Options opt = {{0}, 0, 0, 0, 0, 0, 0, NULL};
+    Options opt = {{0}, 0, '\0', NULL};
 
     error_handler(parse_argument(&opt, argc, argv));
     
