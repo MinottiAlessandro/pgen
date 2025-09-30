@@ -14,8 +14,24 @@ typedef struct Options {
     unsigned int special;
     unsigned int help;
     unsigned int len;
+    char flags; // This variable contains 7 flags, from the least valuable: upper, lower, digits, special, help, exclude, custom
     char *custom_alphabet;
 } Options;
+
+int get_flag(char c, Options *opt) {
+    unsigned int x = 0;
+
+    switch(c) {
+        case 'u': x = 1 << 0; break;
+        case 'l': x = 1 << 1; break;
+        case 'd': x = 1 << 2; break;
+        case 's': x = 1 << 3; break;
+        case 'h': x = 1 << 4; break;
+        case 'x': x = 1 << 5; break;
+        case 'c': x = 1 << 6; break;
+    }
+    return opt->flags & x;
+}
 
 void print_help() {
     printf("pgen usage:\
