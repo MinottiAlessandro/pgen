@@ -86,25 +86,59 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
 }
 
 char* build_alphabet(Options *opt) {
-    unsigned int len = 0;
     char *buffer;
-
-    if(opt->lower) len += slen(lower) - 1;
-    if(opt->upper) len += slen(upper) - 1;
-    if(opt->digits) len += slen(digits) - 1;
-    if(opt->special) len += slen(special) - 1;
-
-    buffer = (char *) malloc((sizeof(char) * len) + 1);
+    buffer = (char *) malloc(sizeof(char) * 96);
     if(!buffer) {
         printf("Error generating the random string.\n");
         exit(1);
     }
-    buffer[0] = '\0';
 
-    if(opt->lower) strcat(buffer, lower);
-    if(opt->upper) strcat(buffer, upper);
-    if(opt->digits) strcat(buffer, digits);
-    if(opt->special) strcat(buffer, special);
+    for(int i = 0; i < 96; i++) buffer[i] = '\0';
+
+    if(opt->lower) {
+        if(!opt->exclude) strcat(buffer, lower);
+        else {
+            int j = slen(buffer);
+            for(unsigned int i = 0; i < slen(lower); i++) {
+                if(opt->exclude[(unsigned int) lower[i]]) continue;
+                buffer[j] = lower[i];
+                ++j;
+            }
+        }
+    }
+    if(opt->upper) {
+        if(!opt->exclude) strcat(buffer, upper);
+        else {
+            int j = slen(buffer);
+            for(unsigned int i = 0; i < slen(upper); i++) {
+                if(opt->exclude[(unsigned int) upper[i]]) continue;
+                buffer[j] = upper[i];
+                ++j;
+            }
+        }
+    }
+    if(opt->digits) {
+        if(!opt->exclude) strcat(buffer, digits);
+        else {
+            int j = slen(buffer);
+            for(unsigned int i = 0; i < slen(digits); i++) {
+                if(opt->exclude[(unsigned int) digits[i]]) continue;
+                buffer[j] = digits[i];
+                ++j;
+            }
+        }
+    }
+    if(opt->special) {
+        if(!opt->exclude) strcat(buffer, special);
+        else {
+            int j = slen(buffer);
+            for(unsigned int i = 0; i < slen(special); i++) {
+                if(opt->exclude[(unsigned int) special[i]]) continue;
+                buffer[j] = special[i];
+                ++j;
+            }
+        }
+    }
 
     return buffer;
 }
@@ -124,13 +158,15 @@ void generate_password(char *p, Options *opt) {
 
     alphabet = build_alphabet(opt);
 
+    if(slen(alphabet) == 0) {
+        printf("Impossible to create a password, no alphabet to work on.\n");
+        exit(0);
+    }
+
     while(i < opt->len) {
-        char c = rand();
-
-        if(opt->custom_alphabet) c = opt->custom_alphabet[c % slen(opt->custom_alphabet)];
-        else c = alphabet[c % (slen(alphabet) - 1)];
-
-        if(opt->exclude[(unsigned int) c]) continue;
+        unsigned int rnd = rand();
+        
+        char c = alphabet[rnd % (slen(alphabet) - 1)];
 
         p[i++] = c;
     }
