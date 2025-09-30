@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define LCG_A 1103515245
+#define LCG_C 12345
+#define LCG_M 2147483648
+
 typedef struct Options {
     char exclude[128];
     unsigned int upper;
@@ -11,6 +15,10 @@ typedef struct Options {
     unsigned int len;
     char *custom_alphabet;
 } Options;
+
+int rand_next(int seed) {
+    return (LCG_A * seed + LCG_C) % LCG_M;
+}
 
 unsigned int slen(char *s) {
     unsigned int i = 0;
@@ -90,18 +98,19 @@ void generate_password(char *p, Options *opt) {
         printf("Error generating the random string.\n");
         exit(1);
     }
-
+    
+    char seed = fgetc(f);
     while(i < opt->len) {
-        char c = fgetc(f);
-        if(opt->custom_alphabet) c = opt->custom_alphabet[c % slen(opt->custom_alphabet)];
+        seed = rand_next(seed);
+        if(opt->custom_alphabet) seed = opt->custom_alphabet[seed % slen(opt->custom_alphabet)];
         else {
-            c = c % 128;
-            if((c < 32 || c > 126) || !truth_machine(c, opt)) continue;
+            seed = seed % 128;
+            if((seed < 32 || seed > 126) || !truth_machine(seed, opt)) continue;
         }
 
-        if(opt->exclude[(unsigned int) c]) continue;
+        if(opt->exclude[(unsigned int) seed]) continue;
 
-        p[i++] = c;
+        p[i++] = seed;
     }
 
     fclose(f);
