@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 typedef struct Options {
+    char exclude[128];
     unsigned int upper;
     unsigned int lower;
     unsigned int digits;
@@ -9,7 +10,6 @@ typedef struct Options {
     unsigned int help;
     unsigned int len;
     char *custom_alphabet;
-    char *exclude;
 } Options;
 
 unsigned int slen(char *s) {
@@ -28,13 +28,6 @@ void print_help() {
     \n\t-c str\tInclude custom alphabet. (Will overwrite other params)\
     \n\t-x str\tExclude specific characters.\
     \n\t-h\tDisplay this help page.\n");
-}
-
-unsigned int in(char c, char *s) {
-    for(unsigned int i = 0; i < slen(s); i++) {
-        if(c == s[i]) return 1;
-    }
-    return 0;
 }
 
 int parse_argument(Options *opt, int argc, char *argv[]) {
@@ -57,7 +50,11 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
                     break;
                 case 'x': 
                     if(argc - i <= 1) return -3;
-                    opt->exclude = argv[i+1];
+                    int z = 0;
+                    while(argv[i+1][z] != '\0') {
+                        opt->exclude[argv[i+1][z] % 128] = 1;
+                        ++z;
+                    }
                     skip = 1;
                     break;
                 case 'h': return 1;
@@ -72,7 +69,6 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
     int len = atoi(argc[argv-1]);
     if(len <= 0) return -2;
     opt->len = (unsigned int) len;
-
     return 0;
 }
 
@@ -97,14 +93,13 @@ void generate_password(char *p, Options *opt) {
 
     while(i < opt->len) {
         char c = fgetc(f);
-
         if(opt->custom_alphabet) c = opt->custom_alphabet[c % slen(opt->custom_alphabet)];
         else {
             c = c % 128;
             if((c < 32 || c > 126) || !truth_machine(c, opt)) continue;
         }
 
-        if(opt->exclude && in(c, opt->exclude)) continue;
+        if(opt->exclude[(unsigned int) c]) continue;
 
         p[i++] = c;
     }
@@ -115,7 +110,7 @@ void generate_password(char *p, Options *opt) {
 int main(int argc, char* argv[]) {
 
     char *p;
-    Options opt = {0, 0, 0, 0, 0, 0, NULL, NULL};
+    Options opt = {{0}, 0, 0, 0, 0, 0, 0, NULL};
 
     switch(parse_argument(&opt, argc, argv)) {
         case 1:
