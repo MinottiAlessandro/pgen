@@ -12,7 +12,7 @@ You can easily *build*, *install*, *clean* and *uninstall* the binary by calling
 
 # TODO:
 - Start optimize the logic, some of the techniques might be:
-    - Hardcode and dinamically build the alphabet
+    - ~~Hardcode and dinamically build the alphabet~~
     - ~~Extract a buffer of n bytes from /dev/random and work with it~~
     - ~~Better flag parsing~~
     - ~~Add O(1) exclude filter~~
