@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 char lower[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
 char upper[] = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','\0'};
@@ -50,11 +49,6 @@ unsigned int slen(char *s) {
 }
 
 void scat(char *buffer, char *alpha, char *exclude) {
-    if(!exclude) {
-        strcat(buffer, alpha);
-        return;
-    }
-
     int j = slen(buffer);
     for(unsigned int i = 0; i < slen(alpha); i++) {
         if(exclude[(unsigned int) alpha[i]]) continue;
