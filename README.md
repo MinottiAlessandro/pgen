@@ -18,3 +18,5 @@ You can easily *build*, *install*, *clean* and *uninstall* the binary by calling
     - ~~Add O(1) exclude filter~~
     - Take advantage of multicore CPUs systems
     - Could be interesting to build a binary without dependencies
+    - Add tests
+    - Fuzz the binary
