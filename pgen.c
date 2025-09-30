@@ -66,7 +66,7 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
         int j = 1;
         while(argv[i][j] != '\0') {
             switch(argv[i][j]) {
-                case '-': ++j; break;
+                case '-': break;
                 case 'u': opt->upper = 1; break;
                 case 'l': opt->lower = 1; break;
                 case 'd': opt->digits = 1; break;
