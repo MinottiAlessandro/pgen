@@ -106,7 +106,14 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
         if(skip) ++i;
     }
 
-    if(!(opt->flags & 0b00001111)) opt->flags = 0b00001111;
+    if(!(opt->flags & 0b00101111)) opt->flags = 0b00001111;
+    printf("upper: %d\n", get_flag('u', opt));
+    printf("lower: %d\n", get_flag('l', opt));
+    printf("digit: %d\n", get_flag('d', opt));
+    printf("special: %d\n", get_flag('s', opt));
+    printf("help: %d\n", get_flag('h', opt));
+    printf("custom: %d\n", get_flag('c', opt));
+    printf("exclude: %d\n", get_flag('x', opt));
 
     int len = atoi(argc[argv-1]);
     if(len <= 0) return 4;
@@ -126,6 +133,7 @@ char* build_alphabet(Options *opt) {
     if(get_flag('u', opt)) scat(buffer, upper, opt->exclude);
     if(get_flag('d', opt)) scat(buffer, digits, opt->exclude);
     if(get_flag('s', opt)) scat(buffer, special, opt->exclude);
+    if(get_flag('c', opt)) scat(buffer, opt->custom_alphabet, opt->exclude);
 
     return buffer;
 }
