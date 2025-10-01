@@ -106,7 +106,7 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
         if(skip) ++i;
     }
 
-    if(opt->flags == '\0') opt->flags = 0b00001111;
+    if(!(opt->flags & 0b00001111)) opt->flags = 0b00001111;
 
     int len = atoi(argc[argv-1]);
     if(len <= 0) return 4;
