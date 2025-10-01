@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 char lower[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
 char upper[] = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','\0'};
@@ -131,13 +132,13 @@ char* build_alphabet(Options *opt) {
 
 void generate_password(char *p, Options *opt) {
     FILE *f = fopen("/dev/urandom", "rb");
-    unsigned int i = 0;
+    uint64_t state = 0;
     char *alphabet;
     unsigned int alphabet_len = 0;
 
     if(f == 0) error_handler(1);
     
-    srand((unsigned int) fgetc(f));
+    while(state == 0) fread(&state, sizeof(uint64_t), 1, f);
     fclose(f);
 
     alphabet = build_alphabet(opt);
@@ -145,12 +146,12 @@ void generate_password(char *p, Options *opt) {
 
     if(alphabet_len == 0) error_handler(2);
 
-    while(i < opt->len) {
-        unsigned int rnd = rand();
-        
-        char c = alphabet[rnd % alphabet_len];
+    for(unsigned int i = 0; i < opt->len; i++) {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
 
-        p[i++] = c;
+        p[i] = alphabet[state % alphabet_len];
     }
 
     p[opt->len] = '\0';
