@@ -15,13 +15,13 @@ typedef struct Options {
 
 int get_flag(char c, Options *opt) {
     switch(c) {
-        case 'u': return opt->flags & (1 << 0);
-        case 'l': return opt->flags & (1 << 1);
-        case 'd': return opt->flags & (1 << 2);
-        case 's': return opt->flags & (1 << 3);
-        case 'h': return opt->flags & (1 << 4);
-        case 'c': return opt->flags & (1 << 5);
-        case 'x': return opt->flags & (1 << 6);
+        case 'u': return opt->flags & (1 << 0); // Return upper flag status
+        case 'l': return opt->flags & (1 << 1); // Return lower flag status
+        case 'd': return opt->flags & (1 << 2); // Return digit flag status
+        case 's': return opt->flags & (1 << 3); // Return special flag status
+        case 'h': return opt->flags & (1 << 4); // Return help flag status
+        case 'c': return opt->flags & (1 << 5); // Return custom flag status
+        case 'x': return opt->flags & (1 << 6); // Return exclude flag status
         default: return 0;
     }
 }
