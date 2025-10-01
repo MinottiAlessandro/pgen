@@ -133,6 +133,7 @@ void generate_password(char *p, Options *opt) {
     FILE *f = fopen("/dev/urandom", "rb");
     unsigned int i = 0;
     char *alphabet;
+    unsigned int alphabet_len = 0;
 
     if(f == 0) error_handler(1);
     
@@ -140,13 +141,14 @@ void generate_password(char *p, Options *opt) {
     fclose(f);
 
     alphabet = build_alphabet(opt);
+    alphabet_len = slen(alphabet);
 
-    if(slen(alphabet) == 0) error_handler(2);
+    if(alphabet_len == 0) error_handler(2);
 
     while(i < opt->len) {
         unsigned int rnd = rand();
         
-        char c = alphabet[rnd % slen(alphabet)];
+        char c = alphabet[rnd % alphabet_len];
 
         p[i++] = c;
     }
