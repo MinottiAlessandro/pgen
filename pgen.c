@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#define CORES 24
+#define MAX_THREADS 24
 
 char lower[] = "abcdefghijklmnopqrstuvwxyz";
 char upper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -13,6 +13,7 @@ char special[] = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 typedef struct Options {
     char exclude[128];
     unsigned int len;
+    unsigned int threads;
     char flags;
     char *custom_alphabet;
 } Options;
@@ -23,7 +24,7 @@ typedef struct Alphabet {
 } Alphabet;
 
 typedef struct Arguments {
-    int id;
+    unsigned int id;
     char *p;
     uint64_t seed;
     Options *opt;
@@ -39,6 +40,7 @@ int get_flag(char c, Options *opt) {
         case 'h': return opt->flags & (1 << 4); // Return help flag status
         case 'c': return opt->flags & (1 << 5); // Return custom flag status
         case 'x': return opt->flags & (1 << 6); // Return exclude flag status
+        case 't': return opt->flags & (1 << 7); // Return threads flag status
         default: return 0;
     }
 }
@@ -52,6 +54,7 @@ void print_help() {
     \n\t-s\tInclude special characters.\
     \n\t-c str\tInclude custom alphabet. (Will overwrite other params)\
     \n\t-x str\tExclude specific characters.\
+    \n\t-t int\tNumber of threads (Defaults: 1)\
     \n\t-h\tDisplay this help page.\n");
 }
 
@@ -113,6 +116,14 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
                 skip = 1;
                 opt->flags ^= (1 << 6);
                 break;
+                case 't': 
+                if(argc - i <= 1) return 5;
+                opt->threads = atoi(argv[i+1]);
+                if(opt->threads > MAX_THREADS) opt->threads = MAX_THREADS;
+                else if(opt->threads <= 0) opt->threads = 1;
+                opt->flags ^= (1 << 7);
+                skip = 1;
+                break;
                 case 'h': opt->flags ^= (1 << 4); return 1;
                 default: return 1;
             }
@@ -150,11 +161,10 @@ char* build_alphabet(Options *opt) {
 
 void* generate_password(void *arg) {
     Arguments *args = (struct Arguments *) arg;
-    printf("seed[%d]: %lu\n", args->id, args->seed);
-    unsigned int chunk = args->opt->len / CORES;
+    unsigned int chunk = args->opt->len / args->opt->threads;
     unsigned int i = chunk * args->id;
     
-    if(args->id == CORES-1) chunk = chunk + (args->opt->len % CORES);
+    if(args->id == args->opt->threads-1) chunk = chunk + (args->opt->len % args->opt->threads);
 
     for(unsigned int j = i; j < i + chunk; j++) {
         args->seed ^= args->seed << 13;
@@ -164,16 +174,16 @@ void* generate_password(void *arg) {
         args->p[j] = args->alphabet->alpha[args->seed % args->alphabet->len];
     }
 
-    if(args->id == CORES-1) args->p[args->opt->len] = '\0';
+    if(args->id == args->opt->threads-1) args->p[args->opt->len] = '\0';
 
     return NULL;
 }
 int main(int argc, char* argv[]) {
     char *p;
-    Options opt = {{0}, 0, '\0', NULL};
+    Options opt = {{0}, 0, 1, '\0', NULL};
     Alphabet alphabet = {NULL, 0};
-    Arguments arg[CORES];
-    pthread_t threads[CORES];
+    Arguments arg[MAX_THREADS];
+    pthread_t threads[MAX_THREADS];
     FILE *f = fopen("/dev/urandom", "rb");
 
     error_handler(parse_argument(&opt, argc, argv));
@@ -188,7 +198,7 @@ int main(int argc, char* argv[]) {
     if(alphabet.len == 0) error_handler(2);
 
     
-    for(unsigned int i = 0; i < CORES; i++) {
+    for(unsigned int i = 0; i < opt.threads; i++) {
         arg[i].alphabet = &alphabet;
         arg[i].opt = &opt;
         arg[i].p = p;
@@ -197,7 +207,7 @@ int main(int argc, char* argv[]) {
         pthread_create(&threads[i], NULL, generate_password, &arg[i]);
     }
     
-    for(unsigned int i = 0; i < CORES; i++) pthread_join(threads[i], NULL);
+    for(unsigned int i = 0; i < opt.threads; i++) pthread_join(threads[i], NULL);
 
     printf("%s\n", p);
     
