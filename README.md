@@ -11,10 +11,10 @@ You can easily *build*, *install*, *clean* and *uninstall* the binary by calling
 ```
 
 # TODO:
-- Take advantage of multicore CPUs systems
 - Could be interesting to build a binary without dependencies
 - Fuzz the binary
 - Polish code
+- ~~Take advantage of multicore CPUs systems~~
 - ~~Hardcode and dinamically build the alphabet~~
 - ~~Extract a buffer of n bytes from /dev/random and work with it~~
 - ~~Better flag parsing~~
