@@ -6,6 +6,7 @@ char lower[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p',
 char upper[] = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','\0'};
 char digits[] = {'0','1','2','3','4','5','6','7','8','9','\0'};
 char special[] = {' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',':',';','<','=','>','?','@','[','\\',']','^','_','`','{','|','}','~','\0'};
+uint64_t state = 0;
 
 typedef struct Options {
     char exclude[128];
@@ -13,6 +14,11 @@ typedef struct Options {
     char flags; // This variable contains 7 flags, from the least valuable: upper, lower, digits, special, help, custom, exclude
     char *custom_alphabet;
 } Options;
+
+typedef struct Alphabet {
+    char *alpha;
+    unsigned int len;
+} Alphabet;
 
 int get_flag(char c, Options *opt) {
     switch(c) {
@@ -131,43 +137,41 @@ char* build_alphabet(Options *opt) {
     return buffer;
 }
 
-void generate_password(char *p, Options *opt) {
-    FILE *f = fopen("/dev/urandom", "rb");
-    uint64_t state = 0;
-    char *alphabet;
-    unsigned int alphabet_len = 0;
-
-    if(f == 0) error_handler(1);
-    
-    while(state == 0) fread(&state, sizeof(uint64_t), 1, f);
-    fclose(f);
-
-    alphabet = build_alphabet(opt);
-    alphabet_len = slen(alphabet);
-
-    if(alphabet_len == 0) error_handler(2);
-
+void generate_password(char *p, Options *opt, Alphabet *alphabet) {
     for(unsigned int i = 0; i < opt->len; i++) {
         state ^= state << 13;
         state ^= state >> 7;
         state ^= state << 17;
 
-        p[i] = alphabet[state % alphabet_len];
+        p[i] = alphabet->alpha[state % alphabet->len];
     }
 
     p[opt->len] = '\0';
 }
 
 int main(int argc, char* argv[]) {
-
     char *p;
     Options opt = {{0}, 0, '\0', NULL};
+    Alphabet alphabet = {NULL, 0};
+    FILE *f = fopen("/dev/urandom", "rb");
 
     error_handler(parse_argument(&opt, argc, argv));
     
+    if(f == 0) error_handler(1);
+    while(state == 0) fread(&state, sizeof(uint64_t), 1, f);
+    fclose(f);
+
     p = (char *) malloc((sizeof(char) * opt.len) + 1);
-    generate_password(p, &opt);
+    if(!p) error_handler(1);
+
+    alphabet.alpha = build_alphabet(&opt);
+    alphabet.len = slen(alphabet.alpha);
+    if(alphabet.len == 0) error_handler(2);    
+
+    generate_password(p, &opt, &alphabet);
+
     printf("%s\n", p);
+    
     free(p);
 
     return 0;
