@@ -3,13 +3,12 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#define CORES 12
+#define CORES 24
 
 char lower[] = "abcdefghijklmnopqrstuvwxyz";
 char upper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 char digits[] = "0123456789";
 char special[] = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
-uint64_t state = 0;
 
 typedef struct Options {
     char exclude[128];
@@ -26,6 +25,7 @@ typedef struct Alphabet {
 typedef struct Arguments {
     int id;
     char *p;
+    uint64_t seed;
     Options *opt;
     Alphabet *alphabet;
 } Arguments;
@@ -150,17 +150,18 @@ char* build_alphabet(Options *opt) {
 
 void* generate_password(void *arg) {
     Arguments *args = (struct Arguments *) arg;
+    printf("seed[%d]: %lu\n", args->id, args->seed);
     unsigned int chunk = args->opt->len / CORES;
     unsigned int i = chunk * args->id;
     
     if(args->id == CORES-1) chunk = chunk + (args->opt->len % CORES);
 
     for(unsigned int j = i; j < i + chunk; j++) {
-        state ^= state << 13;
-        state ^= state >> 7;
-        state ^= state << 17;
+        args->seed ^= args->seed << 13;
+        args->seed ^= args->seed >> 7;
+        args->seed ^= args->seed << 17;
 
-        args->p[j] = args->alphabet->alpha[state % args->alphabet->len];
+        args->p[j] = args->alphabet->alpha[args->seed % args->alphabet->len];
     }
 
     if(args->id == CORES-1) args->p[args->opt->len] = '\0';
@@ -178,8 +179,6 @@ int main(int argc, char* argv[]) {
     error_handler(parse_argument(&opt, argc, argv));
     
     if(f == 0) error_handler(1);
-    while(state == 0) fread(&state, sizeof(uint64_t), 1, f);
-    fclose(f);
 
     p = (char *) malloc((sizeof(char) * opt.len) + 1);
     if(!p) error_handler(1);
@@ -194,6 +193,7 @@ int main(int argc, char* argv[]) {
         arg[i].opt = &opt;
         arg[i].p = p;
         arg[i].id = i;
+        fread(&arg[i].seed, sizeof(uint64_t), 1, f);
         pthread_create(&threads[i], NULL, generate_password, &arg[i]);
     }
     
@@ -203,6 +203,7 @@ int main(int argc, char* argv[]) {
     
     free(p);
     free(alphabet.alpha);
+    fclose(f);
 
     return 0;
 }
