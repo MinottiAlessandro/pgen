@@ -202,6 +202,7 @@ int main(int argc, char* argv[]) {
     printf("%s\n", p);
     
     free(p);
+    free(alphabet.alpha);
 
     return 0;
 }
