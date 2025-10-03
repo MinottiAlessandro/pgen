@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <pthread.h>
+
+#define CORES 12
 
 char lower[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
 char upper[] = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','\0'};
@@ -19,6 +22,13 @@ typedef struct Alphabet {
     char *alpha;
     unsigned int len;
 } Alphabet;
+
+typedef struct Arguments {
+    int id;
+    char *p;
+    Options *opt;
+    Alphabet *alphabet;
+} Arguments;
 
 int get_flag(char c, Options *opt) {
     switch(c) {
@@ -137,22 +147,31 @@ char* build_alphabet(Options *opt) {
     return buffer;
 }
 
-void generate_password(char *p, Options *opt, Alphabet *alphabet) {
-    for(unsigned int i = 0; i < opt->len; i++) {
+void* generate_password(void *arg) {
+    Arguments *args = (struct Arguments *) arg;
+    unsigned int chunk = args->opt->len / CORES;
+    unsigned int i = chunk * args->id;
+    
+    if(args->id == CORES-1) chunk = chunk + (args->opt->len % CORES);
+
+    for(unsigned int j = i; j < i + chunk; j++) {
         state ^= state << 13;
         state ^= state >> 7;
         state ^= state << 17;
 
-        p[i] = alphabet->alpha[state % alphabet->len];
+        args->p[j] = args->alphabet->alpha[state % args->alphabet->len];
     }
 
-    p[opt->len] = '\0';
-}
+    if(args->id == CORES-1) args->p[args->opt->len] = '\0';
 
+    return NULL;
+}
 int main(int argc, char* argv[]) {
     char *p;
     Options opt = {{0}, 0, '\0', NULL};
     Alphabet alphabet = {NULL, 0};
+    Arguments arg[CORES];
+    pthread_t threads[CORES];
     FILE *f = fopen("/dev/urandom", "rb");
 
     error_handler(parse_argument(&opt, argc, argv));
@@ -166,9 +185,18 @@ int main(int argc, char* argv[]) {
 
     alphabet.alpha = build_alphabet(&opt);
     alphabet.len = slen(alphabet.alpha);
-    if(alphabet.len == 0) error_handler(2);    
+    if(alphabet.len == 0) error_handler(2);
 
-    generate_password(p, &opt, &alphabet);
+    
+    for(unsigned int i = 0; i < CORES; i++) {
+        arg[i].alphabet = &alphabet;
+        arg[i].opt = &opt;
+        arg[i].p = p;
+        arg[i].id = i;
+        pthread_create(&threads[i], NULL, generate_password, &arg[i]);
+    }
+    
+    for(unsigned int i = 0; i < CORES; i++) pthread_join(threads[i], NULL);
 
     printf("%s\n", p);
     
