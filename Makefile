@@ -4,7 +4,7 @@
 CC ?= gcc
 
 # Compiler flags
-CFLAGS = -pthread -Wall -Wextra -O3
+CFLAGS = -pthread -Wall -Wextra -O3 -march=native -pthread -flto -ffast-math -funroll-loops -lrt
 
 # Target executable name
 TARGET = pgen
