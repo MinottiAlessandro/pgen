@@ -5,10 +5,10 @@
 
 #define CORES 12
 
-char lower[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','\0'};
-char upper[] = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','\0'};
-char digits[] = {'0','1','2','3','4','5','6','7','8','9','\0'};
-char special[] = {' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',':',';','<','=','>','?','@','[','\\',']','^','_','`','{','|','}','~','\0'};
+char lower[] = "abcdefghijklmnopqrstuvwxyz";
+char upper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+char digits[] = "0123456789";
+char special[] = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 uint64_t state = 0;
 
 typedef struct Options {
