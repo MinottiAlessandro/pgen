@@ -13,7 +13,7 @@ char special[] = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 typedef struct Options {
     char exclude[128];
     unsigned int len;
-    unsigned int threads;
+    int threads;
     char flags;
     char *custom_alphabet;
 } Options;
@@ -24,7 +24,7 @@ typedef struct Alphabet {
 } Alphabet;
 
 typedef struct Arguments {
-    unsigned int id;
+    int id;
     char *p;
     uint64_t seed;
     Options *opt;
@@ -135,7 +135,7 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
 
     if(!(opt->flags & 0b00101111)) opt->flags = 0b00001111;
 
-    int len = atoi(argv[argc-1]);
+    unsigned int len = atoi(argv[argc-1]);
     if(len <= 0) return 4;
     opt->len = (unsigned int) len;
     return 0;
@@ -198,16 +198,16 @@ int main(int argc, char* argv[]) {
     if(alphabet.len == 0) error_handler(2);
 
     
-    for(unsigned int i = 0; i < opt.threads; i++) {
+    for(int i = 0; i < opt.threads; i++) {
         arg[i].alphabet = &alphabet;
         arg[i].opt = &opt;
         arg[i].p = p;
         arg[i].id = i;
-        fread(&arg[i].seed, sizeof(uint64_t), 1, f);
+        if(!fread(&arg[i].seed, sizeof(uint64_t), 1, f)) error_handler(1);
         pthread_create(&threads[i], NULL, generate_password, &arg[i]);
     }
     
-    for(unsigned int i = 0; i < opt.threads; i++) pthread_join(threads[i], NULL);
+    for(int i = 0; i < opt.threads; i++) pthread_join(threads[i], NULL);
 
     printf("%s\n", p);
     
