@@ -108,7 +108,7 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
 
     if(!(opt->flags & 0b00101111)) opt->flags = 0b00001111;
 
-    int len = atoi(argc[argv-1]);
+    int len = atoi(argv[argc-1]);
     if(len <= 0) return 4;
     opt->len = (unsigned int) len;
     return 0;
