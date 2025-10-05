@@ -100,30 +100,30 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
                 case 'l': opt->flags ^= (1 << 1); break;
                 case 'd': opt->flags ^= (1 << 2); break;
                 case 's': opt->flags ^= (1 << 3); break;
-                case 'c': 
-                if(argc - i <= 1) return 5;
-                opt->custom_alphabet = argv[i+1];
-                skip = 1;
-                opt->flags ^= (1 << 5);
-                break;
-                case 'x': 
-                if(argc - i <= 1) return 5;
-                int z = 0;
-                while(argv[i+1][z] != '\0') {
-                    opt->exclude[argv[i+1][z] % 128] = 1;
-                    ++z;
-                }
-                skip = 1;
-                opt->flags ^= (1 << 6);
-                break;
-                case 't': 
-                if(argc - i <= 1) return 5;
-                opt->threads = atoi(argv[i+1]);
-                if(opt->threads > MAX_THREADS) opt->threads = MAX_THREADS;
-                else if(opt->threads <= 0) opt->threads = 1;
-                opt->flags ^= (1 << 7);
-                skip = 1;
-                break;
+                case 'c':
+                    if(argc - i <= 1) return 5;
+                    opt->custom_alphabet = argv[i+1];
+                    skip = 1;
+                    opt->flags ^= (1 << 5);
+                    break;
+                case 'x':
+                    if(argc - i <= 1) return 5;
+                    int z = 0;
+                    while(argv[i+1][z] != '\0') {
+                        opt->exclude[argv[i+1][z] % 128] = 1;
+                        ++z;
+                    }
+                    skip = 1;
+                    opt->flags ^= (1 << 6);
+                    break;
+                case 't':
+                    if(argc - i <= 1) return 5;
+                    opt->threads = atoi(argv[i+1]);
+                    if(opt->threads > MAX_THREADS) opt->threads = MAX_THREADS;
+                    else if(opt->threads <= 0) opt->threads = 1;
+                    opt->flags ^= (1 << 7);
+                    skip = 1;
+                    break;
                 case 'h': opt->flags ^= (1 << 4); return 1;
                 default: return 1;
             }
@@ -143,7 +143,7 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
 
 char* build_alphabet(Options *opt) {
     char *buffer = (char *) malloc(sizeof(char) * 96);
-    
+
     if(!buffer) error_handler(1);
 
     for(int i = 0; i < 96; i++) buffer[i] = '\0';
@@ -163,7 +163,7 @@ void* generate_password(void *arg) {
     Arguments *args = (struct Arguments *) arg;
     unsigned int chunk = args->opt->len / args->opt->threads;
     unsigned int i = chunk * args->id;
-    
+
     if(args->id == args->opt->threads-1) chunk = chunk + (args->opt->len % args->opt->threads);
 
     for(unsigned int j = i; j < i + chunk; j++) {
@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
     FILE *f = fopen("/dev/urandom", "rb");
 
     error_handler(parse_argument(&opt, argc, argv));
-    
+
     if(f == 0) error_handler(1);
 
     p = (char *) malloc((sizeof(char) * opt.len) + 1);
@@ -197,7 +197,7 @@ int main(int argc, char* argv[]) {
     alphabet.len = slen(alphabet.alpha);
     if(alphabet.len == 0) error_handler(2);
 
-    
+
     for(int i = 0; i < opt.threads; i++) {
         arg[i].alphabet = &alphabet;
         arg[i].opt = &opt;
@@ -206,11 +206,11 @@ int main(int argc, char* argv[]) {
         if(!fread(&arg[i].seed, sizeof(uint64_t), 1, f)) error_handler(1);
         pthread_create(&threads[i], NULL, generate_password, &arg[i]);
     }
-    
+
     for(int i = 0; i < opt.threads; i++) pthread_join(threads[i], NULL);
 
     printf("%s\n", p);
-    
+
     free(p);
     free(alphabet.alpha);
     fclose(f);
