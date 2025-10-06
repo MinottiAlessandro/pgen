@@ -101,29 +101,29 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
                 case 'd': opt->flags ^= (1 << 2); break;
                 case 's': opt->flags ^= (1 << 3); break;
                 case 'c': 
-                if(argc - i <= 1) return 5;
-                opt->custom_alphabet = argv[i+1];
-                skip = 1;
-                opt->flags ^= (1 << 5);
-                break;
+                    if(argc - i <= 1) return 5;
+                    opt->custom_alphabet = argv[i+1];
+                    skip = 1;
+                    opt->flags ^= (1 << 5);
+                    break;
                 case 'x': 
-                if(argc - i <= 1) return 5;
-                int z = 0;
-                while(argv[i+1][z] != '\0') {
-                    opt->exclude[argv[i+1][z] % 128] = 1;
-                    ++z;
-                }
-                skip = 1;
-                opt->flags ^= (1 << 6);
-                break;
+                    if(argc - i <= 1) return 5;
+                    int z = 0;
+                    while(argv[i+1][z] != '\0') {
+                        opt->exclude[argv[i+1][z] % 128] = 1;
+                        ++z;
+                    }
+                    skip = 1;
+                    opt->flags ^= (1 << 6);
+                    break;
                 case 't': 
-                if(argc - i <= 1) return 5;
-                opt->threads = atoi(argv[i+1]);
-                if(opt->threads > MAX_THREADS) opt->threads = MAX_THREADS;
-                else if(opt->threads <= 0) opt->threads = 1;
-                opt->flags ^= (1 << 7);
-                skip = 1;
-                break;
+                    if(argc - i <= 1) return 5;
+                    opt->threads = atoi(argv[i+1]);
+                    if(opt->threads > MAX_THREADS) opt->threads = MAX_THREADS;
+                    else if(opt->threads <= 0) opt->threads = 1;
+                    opt->flags ^= (1 << 7);
+                    skip = 1;
+                    break;
                 case 'h': opt->flags ^= (1 << 4); return 1;
                 default: return 1;
             }
