@@ -8,13 +8,14 @@
 char lower[] = "abcdefghijklmnopqrstuvwxyz";
 char upper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 char digits[] = "0123456789";
-char special[] = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+char special[] = "!@#$%^&*";
+char more_special[] = " \"'()+,-./:;<=>?[\\]_`{|}~";
 
 typedef struct Options {
     char exclude[128];
     unsigned int len;
     int threads;
-    char flags;
+    unsigned short flags;
     char *custom_alphabet;
 } Options;
 
@@ -31,17 +32,42 @@ typedef struct Arguments {
     Alphabet *alphabet;
 } Arguments;
 
-int get_flag(char c, Options *opt) {
-    switch(c) {
-        case 'u': return opt->flags & (1 << 0); // Return upper flag status
-        case 'l': return opt->flags & (1 << 1); // Return lower flag status
-        case 'd': return opt->flags & (1 << 2); // Return digit flag status
-        case 's': return opt->flags & (1 << 3); // Return special flag status
-        case 'h': return opt->flags & (1 << 4); // Return help flag status
-        case 'c': return opt->flags & (1 << 5); // Return custom flag status
-        case 'x': return opt->flags & (1 << 6); // Return exclude flag status
-        case 't': return opt->flags & (1 << 7); // Return threads flag status
-        default: return 0;
+int get_flags(char *s, Options *opt) {
+    int result = 0;
+    
+    while(*s) {
+        switch(*s++) {
+            case 'u': result += opt->flags & (1 << 0); continue; // Return upper flag status
+            case 'l': result += opt->flags & (1 << 1); continue; // Return lower flag status
+            case 'd': result += opt->flags & (1 << 2); continue; // Return digit flag status
+            case 's': result += opt->flags & (1 << 3); continue; // Return special flag status
+            case 'h': result += opt->flags & (1 << 4); continue; // Return help flag status
+            case 'c': result += opt->flags & (1 << 5); continue; // Return custom flag status
+            case 'x': result += opt->flags & (1 << 6); continue; // Return exclude flag status
+            case 't': result += opt->flags & (1 << 7); continue; // Return threads flag status
+            case '+': result += opt->flags & (1 << 8); continue; // Return more special flag status
+            default: return 0;
+        }
+    }
+
+    printf("RESULT: %d\n", result);
+    return result;
+}
+
+void set_flags(char *s, Options *opt) {
+    while(*s) {
+        switch(*s++) {
+            case 'u': opt->flags ^= (1 << 0); continue; // Set upper flag status
+            case 'l': opt->flags ^= (1 << 1); continue; // Set lower flag status
+            case 'd': opt->flags ^= (1 << 2); continue; // Set digit flag status
+            case 's': opt->flags ^= (1 << 3); continue; // Set special flag status
+            case 'h': opt->flags ^= (1 << 4); continue; // Set help flag status
+            case 'c': opt->flags ^= (1 << 5); continue; // Set custom flag status
+            case 'x': opt->flags ^= (1 << 6); continue; // Set exclude flag status
+            case 't': opt->flags ^= (1 << 7); continue; // Set threads flag status
+            case '+': opt->flags ^= (1 << 8); continue; // Set more special flag status
+            default: continue;
+        }
     }
 }
 
@@ -96,15 +122,16 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
         while(argv[i][j] != '\0') {
             switch(argv[i][j]) {
                 case '-': break;
-                case 'u': opt->flags ^= (1 << 0); break;
-                case 'l': opt->flags ^= (1 << 1); break;
-                case 'd': opt->flags ^= (1 << 2); break;
-                case 's': opt->flags ^= (1 << 3); break;
+                case 'u': set_flags("u", opt); break;
+                case 'l': set_flags("l", opt); break;
+                case 'd': set_flags("d", opt); break;
+                case 's': set_flags("s", opt); break;
+                case '+': set_flags("+", opt); break;
                 case 'c': 
                     if(argc - i <= 1) return 5;
                     opt->custom_alphabet = argv[i+1];
                     skip = 1;
-                    opt->flags ^= (1 << 5);
+                    set_flags("c", opt);
                     break;
                 case 'x': 
                     if(argc - i <= 1) return 5;
@@ -114,17 +141,17 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
                         ++z;
                     }
                     skip = 1;
-                    opt->flags ^= (1 << 6);
+                    set_flags("x", opt);
                     break;
                 case 't': 
                     if(argc - i <= 1) return 5;
                     opt->threads = atoi(argv[i+1]);
                     if(opt->threads > MAX_THREADS) opt->threads = MAX_THREADS;
                     else if(opt->threads <= 0) opt->threads = 1;
-                    opt->flags ^= (1 << 7);
+                    set_flags("t", opt);
                     skip = 1;
                     break;
-                case 'h': opt->flags ^= (1 << 4); return 1;
+                case 'h': set_flags("h", opt); return 1;
                 default: return 1;
             }
             ++j;
@@ -133,7 +160,8 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
         if(skip) ++i;
     }
 
-    if(!(opt->flags & 0b00101111)) opt->flags = 0b00001111;
+    if(get_flags("+", opt)) set_flags("s", opt);
+    if(!get_flags("ludsc+", opt)) set_flags("luds", opt);
 
     unsigned int len = atoi(argv[argc-1]);
     if(len <= 0) return 4;
@@ -148,12 +176,13 @@ char* build_alphabet(Options *opt) {
 
     for(int i = 0; i < 96; i++) buffer[i] = '\0';
 
-    if(get_flag('c', opt)) scat(buffer, opt->custom_alphabet, opt->exclude);
+    if(get_flags("c", opt)) scat(buffer, opt->custom_alphabet, opt->exclude);
     else {
-        if(get_flag('l', opt)) scat(buffer, lower, opt->exclude);
-        if(get_flag('u', opt)) scat(buffer, upper, opt->exclude);
-        if(get_flag('d', opt)) scat(buffer, digits, opt->exclude);
-        if(get_flag('s', opt)) scat(buffer, special, opt->exclude);
+        if(get_flags("l", opt)) scat(buffer, lower, opt->exclude);
+        if(get_flags("u", opt)) scat(buffer, upper, opt->exclude);
+        if(get_flags("d", opt)) scat(buffer, digits, opt->exclude);
+        if(get_flags("s", opt)) scat(buffer, special, opt->exclude);
+        if(get_flags("+", opt)) scat(buffer, more_special, opt->exclude);
     }
 
     return buffer;
