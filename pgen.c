@@ -50,7 +50,6 @@ int get_flags(char *s, Options *opt) {
         }
     }
 
-    printf("RESULT: %d\n", result);
     return result;
 }
 
