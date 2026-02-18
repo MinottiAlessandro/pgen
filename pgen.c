@@ -313,7 +313,7 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < opt.threads; i++) pthread_join(threads[i], NULL);
 
     printf("%s\n", p);
-    if(get_flags("e", &opt)) printf("\nEntropy: %.4f", string_entropy(p));
+    if(get_flags("e", &opt)) printf("Entropy: %.4f\n", string_entropy(p));
     
     free(p);
     free(alphabet.alpha);
