@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <sys/random.h>
+#include <math.h>
 
 #define MAX_THREADS 24
 
@@ -50,6 +51,7 @@ int get_flags(char *s, Options *opt) {
             case '+': result += opt->flags & (1 << 8); continue; // Return more special flag status
             case 'f': result += opt->flags & (1 << 9); continue; // Return fast mode flag status
             case 'n': result += opt->flags & (1 << 10); continue; // Return normal mode flag status
+            case 'e': result += opt->flags & (1 << 11); continue; // Return show entropy flag status
             default: return 0;
         }
     }
@@ -71,6 +73,7 @@ void set_flags(char *s, Options *opt) {
             case '+': opt->flags ^= (1 << 8); continue; // Set more special flag status
             case 'f': opt->flags ^= (1 << 9); continue; // Set more special flag status
             case 'n': opt->flags ^= (1 << 10); continue; // Set more special flag status
+            case 'e': opt->flags ^= (1 << 11); continue; // Set entropy flag status
             default: continue;
         }
     }
@@ -86,6 +89,7 @@ void print_help() {
     \n\t-c str\tInclude custom alphabet. (Will overwrite other params)\
     \n\t-x str\tExclude specific characters.\
     \n\t-t int\tNumber of threads (Defaults: 1)\
+    \n\t-e\tShow entropy of the produced string (higher the better)\
     \n\t-h\tDisplay this help page.\n");
 }
 
@@ -116,6 +120,25 @@ void scat(char *buffer, char *alpha, char *exclude) {
         ++j;
     }
 
+}
+
+double string_entropy(char *str){
+    if (!str || *str == '\0') return 0.0;
+
+    int freq[256] = {0};
+    int len = slen(str);
+
+    for (int i = 0; i < len; i++) freq[(unsigned char)str[i]]++;
+
+    double entropy = 0.0;
+    for (int i = 0; i < 256; i++) {
+        if (freq[i] > 0) {
+            double p = (double)freq[i] / len;
+            entropy -= p * log2(p);
+        }
+    }
+
+    return entropy;
 }
 
 void* generate_password_fast(void *arg) {
@@ -184,6 +207,7 @@ int parse_argument(Options *opt, int argc, char *argv[]) {
                 case 'd': set_flags("d", opt); break;
                 case 's': set_flags("s", opt); break;
                 case '+': set_flags("+", opt); break;
+                case 'e': set_flags("e", opt); break;
                 case 'c': 
                     if(argc - i <= 1) return 5;
                     opt->custom_alphabet = argv[i+1];
@@ -289,6 +313,7 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < opt.threads; i++) pthread_join(threads[i], NULL);
 
     printf("%s\n", p);
+    if(get_flags("e", &opt)) printf("\nEntropy: %.4f", string_entropy(p));
     
     free(p);
     free(alphabet.alpha);
